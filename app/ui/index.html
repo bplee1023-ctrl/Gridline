@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gridline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root {
+  --paper: #e9eeeb; --panel: #f6f8f6; --raise: #ffffff; --ink: #15201b; --muted: #5a6962;
+  --faint: #8a9891; --line: #cfd8d3; --hair: #e1e7e3; --turf: #1f5c46; --turf-soft: #d5e6dd;
+  --pylon: #ef6a1f; --warn: #a3542e;
+  --g0: #a7b1ac; --g1: #86a597; --g2: #3f8a68; --g3: #1f5c46; --g4: #ef6a1f;
+  --cond: "Barlow Condensed", "Avenir Next Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Barlow", -apple-system, "Helvetica Neue", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f1714; --panel: #151f1b; --raise: #1b2722; --ink: #e3eae6; --muted: #98a9a0;
+    --faint: #6b7c74; --line: #2a3832; --hair: #212d28; --turf: #62b993; --turf-soft: #1e3a2f;
+    --g0: #4c5a54; --g1: #5f8273; --g2: #4f9f7b; --g3: #74c7a0; --g4: #ff7d33; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f1714; --panel: #151f1b; --raise: #1b2722; --ink: #e3eae6; --muted: #98a9a0;
+  --faint: #6b7c74; --line: #2a3832; --hair: #212d28; --turf: #62b993; --turf-soft: #1e3a2f;
+  --g0: #4c5a54; --g1: #5f8273; --g2: #4f9f7b; --g3: #74c7a0; --g4: #ff7d33; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.45 var(--body); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--turf); outline-offset: 2px; border-radius: 3px; }
+.num { font-family: var(--cond); font-variant-numeric: tabular-nums; }
+
+/* ---------- shell */
+.app { display: grid; grid-template-columns: 196px 1fr; height: 100vh; }
+.side { background: var(--panel); border-right: 1px solid var(--line); display: flex; flex-direction: column; overflow-y: auto; padding: 14px 10px 18px; }
+.brand { font-family: var(--cond); font-weight: 700; font-size: 26px; letter-spacing: .5px; padding: 4px 10px 14px; display: flex; align-items: center; gap: 9px; }
+.brand svg { flex: none; }
+.navgroup { margin-bottom: 14px; }
+.navhead { font-size: 12px; color: var(--faint); padding: 2px 10px 4px; }
+.nav a { display: flex; justify-content: space-between; align-items: baseline; text-decoration: none; padding: 5px 10px; border-radius: 6px; color: var(--muted); }
+.nav a:hover { background: var(--hair); color: var(--ink); }
+.nav a[aria-current="page"] { background: var(--turf-soft); color: var(--ink); font-weight: 600; }
+.nav a .abbr { font-family: var(--cond); font-weight: 600; font-size: 16px; width: 50px; flex: none; color: var(--ink); }
+.nav a .full { flex: 1; font-size: 13px; }
+.main { display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+.toolbar { display: flex; align-items: center; gap: 12px; padding: 10px 22px; border-bottom: 1px solid var(--line); background: var(--panel); flex-wrap: wrap; }
+.search { flex: 1 1 240px; max-width: 380px; position: relative; }
+.search input { width: 100%; padding: 7px 10px 7px 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--raise); }
+.search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+.search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font: 12px var(--body); color: var(--faint); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--raise); }
+.seg button { border: 0; background: transparent; padding: 5px 11px; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--turf); color: var(--paper); }
+.pill { margin-left: auto; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--g2); }
+.pill .dot.pending { background: var(--pylon); }
+.pill .dot.offline { background: var(--faint); }
+.content { flex: 1; overflow: auto; padding: 22px 26px 60px; }
+.banner { background: var(--turf); color: var(--paper); padding: 8px 22px; display: flex; gap: 14px; align-items: center; font-size: 14px; }
+.banner button { background: var(--paper); color: var(--turf); border: 0; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-weight: 600; }
+.banner.err { background: var(--warn); }
+
+/* ---------- headings */
+h1 { font-family: var(--cond); font-weight: 700; font-size: 40px; line-height: 1; margin: 0; letter-spacing: .2px; }
+h2 { font-family: var(--cond); font-weight: 600; font-size: 22px; margin: 28px 0 10px; }
+.sub { color: var(--muted); margin: 6px 0 0; }
+.headrow { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; margin-bottom: 16px; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; font-size: 14px; }
+.filters label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.filters select, .filters input[type=number] { padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--raise); }
+.filters input[type=number] { width: 90px; }
+.note { font-size: 13px; color: var(--muted); }
+
+/* ---------- table */
+table { border-collapse: collapse; width: 100%; }
+.rank-table th { text-align: left; font-weight: 500; font-size: 12.5px; color: var(--faint); padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; position: sticky; top: -22px; background: var(--paper); z-index: 1; }
+.rank-table th button { all: unset; cursor: pointer; }
+.rank-table th button:focus-visible { outline: 2px solid var(--turf); }
+.rank-table th[aria-sort] button { color: var(--ink); }
+.rank-table td { padding: 7px 8px; border-bottom: 1px solid var(--hair); vertical-align: middle; }
+.rank-table tbody tr { cursor: pointer; }
+.rank-table tbody tr:hover { background: var(--panel); }
+.rank-table tr.below td { opacity: .55; }
+.rk { font-family: var(--cond); font-size: 18px; font-weight: 600; width: 34px; color: var(--muted); text-align: right; }
+.pname { font-weight: 600; }
+.ptag { font-size: 12px; color: var(--faint); margin-left: 6px; font-weight: 400; }
+.team { font-family: var(--cond); font-weight: 600; color: var(--muted); }
+.gcell { display: flex; align-items: center; gap: 10px; min-width: 210px; }
+.gnum { font-family: var(--cond); font-weight: 700; font-size: 22px; width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+.gband { font-size: 12px; color: var(--faint); width: 30px; }
+.impact { font-family: var(--cond); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.impact.neg { color: var(--warn); }
+.minis { display: flex; gap: 3px; align-items: flex-end; height: 22px; }
+.minis span { width: 7px; border-radius: 1px; background: var(--g1); }
+.minis span.est { background: repeating-linear-gradient(45deg, var(--g1) 0 2px, transparent 2px 4px); outline: 1px solid var(--g1); outline-offset: -1px; }
+.snapcol { font-family: var(--cond); font-size: 16px; color: var(--muted); text-align: right; }
+.empty { padding: 50px 0; color: var(--muted); max-width: 520px; }
+
+/* ---------- the gridline: grade drawn on a 0-100 field with yard lines at the label bands */
+.field { position: relative; height: 12px; flex: 1; min-width: 120px; background: var(--hair); border-radius: 2px; overflow: hidden; }
+.field .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px 0 0 2px; }
+.field .band { position: absolute; top: 3px; bottom: 3px; background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.field .yl { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--paper); opacity: .9; }
+.field.big { height: 26px; border-radius: 3px; }
+.field.big .yl { width: 2px; }
+.field.big .band { top: 9px; bottom: 9px; }
+.yardlabels { position: relative; height: 16px; font-family: var(--cond); font-size: 13px; color: var(--faint); }
+.yardlabels span { position: absolute; transform: translateX(-50%); }
+
+/* ---------- badge */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--muted); }
+.estimated-tag { font-size: 11.5px; padding: 1px 6px; border-radius: 10px; border: 1px dashed var(--muted); color: var(--muted); white-space: nowrap; }
+
+/* ---------- player page */
+.back { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 0; margin-bottom: 14px; }
+.phead { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+.phead img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; background: var(--hair); }
+.scorebox { display: grid; grid-template-columns: minmax(260px, 1.4fr) minmax(160px, .6fr); gap: 34px; margin: 26px 0 8px; max-width: 900px; }
+.bignum { font-family: var(--cond); font-weight: 700; font-size: 76px; line-height: .9; font-variant-numeric: tabular-nums; }
+.bignum small { font-size: 24px; color: var(--faint); font-weight: 500; margin-left: 6px; }
+.biglabel { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.tabs { display: flex; gap: 6px; margin: 16px 0 0; }
+.tabs button { border: 1px solid var(--line); background: var(--raise); border-radius: 16px; padding: 3px 12px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: var(--turf); color: var(--paper); border-color: var(--turf); }
+.twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; max-width: 1100px; }
+.comprow { display: grid; grid-template-columns: 170px 1fr 44px; gap: 12px; align-items: center; padding: 6px 0; }
+.comprow .num { font-size: 18px; font-weight: 600; text-align: right; }
+.comprow .lbl small { display: block; color: var(--faint); font-size: 12px; }
+.mt th { text-align: left; font-weight: 500; font-size: 12.5px; color: var(--faint); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.mt td { padding: 6px 8px; border-bottom: 1px solid var(--hair); font-size: 14px; }
+.mt td.r, .mt th.r { text-align: right; font-variant-numeric: tabular-nums; }
+.mt tr.group td { font-family: var(--cond); font-weight: 600; font-size: 17px; padding-top: 16px; border-bottom: 1px solid var(--line); }
+.mt tr.group td .note { font-family: var(--body); font-weight: 400; margin-left: 8px; }
+.pctbar { display: inline-block; width: 60px; height: 6px; background: var(--hair); border-radius: 3px; vertical-align: middle; margin-right: 6px; position: relative; }
+.pctbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: var(--g2); }
+.pos { color: var(--g3); } .negp { color: var(--warn); }
+.chart { width: 100%; height: 170px; }
+.chart text { font: 12px var(--cond); fill: var(--faint); }
+
+/* ---------- palette */
+.palette { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 30%, transparent); display: none; align-items: flex-start; justify-content: center; padding-top: 12vh; z-index: 10; }
+.palette.open { display: flex; }
+.palette .box { width: min(560px, 92vw); background: var(--raise); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.25); overflow: hidden; border: 1px solid var(--line); }
+.palette input { width: 100%; border: 0; border-bottom: 1px solid var(--line); padding: 14px 16px; font-size: 18px; background: transparent; outline: none; }
+.palette ul { list-style: none; margin: 0; padding: 6px; max-height: 50vh; overflow: auto; }
+.palette li { padding: 8px 10px; border-radius: 7px; display: flex; gap: 10px; align-items: baseline; cursor: pointer; }
+.palette li[aria-selected="true"] { background: var(--turf-soft); }
+.palette li .team { width: 40px; }
+.palette li .pos { margin-left: auto; font-family: var(--cond); font-weight: 600; color: var(--muted); }
+
+/* ---------- compare */
+.cmp { table-layout: fixed; max-width: 1100px; }
+.cmp th, .cmp td { padding: 7px 10px; border-bottom: 1px solid var(--hair); text-align: right; }
+.cmp th:first-child, .cmp td:first-child { text-align: left; width: 34%; color: var(--muted); }
+.cmp td.best { font-weight: 700; color: var(--g3); }
+.cmp thead th { font-family: var(--cond); font-weight: 700; font-size: 20px; color: var(--ink); vertical-align: bottom; }
+.picker { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 20px; }
+.picker input { padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--raise); width: 240px; }
+.chip { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border-radius: 16px; background: var(--turf-soft); }
+.chip button { border: 0; background: none; cursor: pointer; color: var(--muted); padding: 0 2px; }
+.prose { max-width: 720px; }
+.prose p { margin: 8px 0; }
+
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  .side { flex-direction: row; overflow-x: auto; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); }
+  .navgroup { display: flex; margin: 0; } .navhead, .nav a .full, .brand span { display: none; }
+  .main { height: auto; } .app { height: auto; }
+  .content { padding: 16px; }
+  .twocol, .scorebox { grid-template-columns: 1fr; }
+  .hide-sm { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Boards">
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" fill="var(--turf)"/><path d="M6 4v16M10 4v16M14 4v16M18 4v16" stroke="var(--paper)" stroke-width="1.4"/><rect x="18" y="4" width="5" height="16" fill="var(--pylon)" rx="0"/></svg>
+      <span>Gridline</span>
+    </div>
+    <div class="navgroup"><div class="navhead">Offense</div><div class="nav" id="nav-off"></div></div>
+    <div class="navgroup"><div class="navhead">Defense</div><div class="nav" id="nav-def"></div></div>
+    <div class="navgroup"><div class="navhead">Special teams</div><div class="nav" id="nav-st"></div></div>
+    <div class="navgroup"><div class="navhead">Tools</div><div class="nav">
+      <a href="#/compare"><span class="full">Compare players</span></a>
+      <a href="#/method"><span class="full">Methodology</span></a>
+    </div></div>
+  </nav>
+  <div class="main">
+    <div id="banner"></div>
+    <div class="toolbar">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search players, teams, positions" aria-label="Search players" autocomplete="off">
+        <kbd>⌘K</kbd>
+      </div>
+      <div class="seg" role="group" aria-label="Season type" id="stype">
+        <button data-v="REG">Regular</button><button data-v="POST">Playoffs</button><button data-v="ALL">All</button>
+      </div>
+      <div class="pill" id="pill" aria-live="polite"><span class="dot"></span><span>Loading data</span></div>
+    </div>
+    <main class="content" id="view" tabindex="-1"></main>
+  </div>
+</div>
+<div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Find a player">
+  <div class="box"><input id="pq" placeholder="Find a player" autocomplete="off" aria-controls="plist"><ul id="plist" role="listbox"></ul></div>
+</div>
+
+<script>
+"use strict";
+// Replaced at build time with the GitHub Pages URL (scripts/configure.mjs). Empty = same origin.
+const CONFIG_BASE = "__GRIDLINE_DATA_BASE__";
+const POLL_MS = 30 * 60 * 1000;
+const BOARDS = {
+  off: [["QB","Quarterback"],["RB","Running back"],["WR","Wide receiver"],["TE","Tight end"],["OT","Tackle"],["IOL","Interior line"]],
+  def: [["EDGE","Edge"],["IDL","Interior D-line"],["LB","Linebacker"],["CB","Cornerback"],["S","Safety"]],
+  st: [["K","Kicker"],["P","Punter"],["RET","Returners"]],
+};
+const BOARD_NAME = Object.fromEntries([...BOARDS.off, ...BOARDS.def, ...BOARDS.st]);
+const T = window.__TAURI__;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d = 1) => v == null || Number.isNaN(v) ? "–" : Number(v).toFixed(d);
+const signed = (v, d = 1) => v == null ? "–" : (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v).toFixed(d);
+
+// ------------------------------------------------------------------ storage (app cache or IndexedDB)
+const store = (() => {
+  if (T) return {
+    async get(k) { try { const s = await T.core.invoke("cache_read", { key: k }); return s ? JSON.parse(s) : null; } catch { return null; } },
+    async set(k, v) { try { await T.core.invoke("cache_write", { key: k, data: JSON.stringify(v) }); } catch (e) { console.warn(e); } },
+  };
+  let dbp;
+  const db = () => dbp ||= new Promise((res, rej) => {
+    const r = indexedDB.open("gridline", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("files");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  return {
+    async get(k) { try { const d = await db(); return await new Promise(r => { const q = d.transaction("files").objectStore("files").get(k); q.onsuccess = () => r(q.result ?? null); q.onerror = () => r(null); }); } catch { return null; } },
+    async set(k, v) { try { const d = await db(); d.transaction("files", "readwrite").objectStore("files").put(v, k); } catch {} },
+  };
+})();
+
+// ------------------------------------------------------------------ data layer
+const S = {
+  base: null, season: null, manifest: null, offline: false, mem: new Map(),
+  stype: "ALL", board: "QB", sortKey: "grade", sortDir: -1, metric: "grade",
+  team: "", wk0: null, wk1: null, minimums: true, customMin: "",
+};
+
+function resolveBase(settings) {
+  let b = (settings && settings.base) || (CONFIG_BASE.startsWith("__") ? "" : CONFIG_BASE);
+  if (!b && location.protocol.startsWith("http")) b = new URL(".", location.href).href;
+  if (b && !b.endsWith("/")) b += "/";
+  return b;
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error(`${r.status} ${url}`);
+  return r.json();
+}
+
+async function loadManifest() {
+  const cached = await store.get("manifest");
+  try {
+    if (!S.base) throw new Error("No data source configured");
+    const latest = await fetchJSON(S.base + "latest.json");
+    S.season = latest.season;
+    S.manifest = await fetchJSON(S.base + latest.manifest);
+    S.offline = false;
+    await store.set("manifest", S.manifest);
+  } catch (e) {
+    S.offline = true;
+    if (cached) { S.manifest = cached; S.season = cached.season; }
+    else throw e;
+  }
+}
+
+// a file is re-downloaded only when its hash in the manifest changed
+async function getFile(path) {
+  const h = S.manifest.files[path];
+  if (!h) return null;
+  const key = `${S.season}/${path}`;
+  const m = S.mem.get(key);
+  if (m && m.h === h) return m.data;
+  const c = await store.get(key);
+  if (c && c.h === h) { S.mem.set(key, c); return c.data; }
+  try {
+    const data = await fetchJSON(`${S.base}${S.season}/${path}`);
+    const rec = { h, data };
+    S.mem.set(key, rec); store.set(key, rec);
+    return data;
+  } catch (e) {
+    if (c) return c.data;           // offline: last good copy
+    throw e;
+  }
+}
+
+async function prefetch() {
+  const files = Object.keys(S.manifest.files);
+  const first = files.filter(f => f.startsWith("rankings/") || f === "search_index.json" || f === "methodology.json");
+  await pool(first, 6);
+  if (T) await pool(files.filter(f => !first.includes(f)), 4);   // whole snapshot available offline in the app
+}
+async function pool(list, n) {
+  let i = 0;
+  const work = async () => { while (i < list.length) { const f = list[i++]; try { await getFile(f); } catch {} } };
+  await Promise.all(Array.from({ length: n }, work));
+}
+
+// ------------------------------------------------------------------ grading (mirror of pipeline/grade.py: score())
+function scoreRow(M, num, den, kMult = 1) {
+  const n = M.metrics.length, C = M.comps.length, z = new Array(n).fill(NaN);
+  for (let i = 0; i < n; i++) {
+    if (den[i] > 0) {
+      const x = num[i] / den[i], k = M.k[i] * kMult;
+      const xh = (den[i] * x + k * M.mu[i]) / (den[i] + k);
+      z[i] = (xh - M.mu_z[i]) / M.sd_z[i] * M.sign[i];
+    }
+  }
+  const cz = new Array(C).fill(NaN);
+  for (let c = 0; c < C; c++) {
+    let s = 0, k = 0;
+    for (let i = 0; i < n; i++) if (M.comp_of[i] === c && !Number.isNaN(z[i])) { s += z[i]; k++; }
+    if (k) cz[c] = s / k;
+  }
+  let ws = 0, acc = 0;
+  for (let c = 0; c < C; c++) if (!Number.isNaN(cz[c])) { ws += M.w[c]; acc += M.w[c] * cz[c]; }
+  const composite = ws > 0 ? acc / ws : NaN;
+  const grade = Math.min(100, Math.max(0, M.a + M.b * composite));
+  let meas = 0;
+  for (let c = 0; c < C; c++) if (!Number.isNaN(cz[c])) meas += M.w[c] * (M.status[c] === "measured" ? 1 : M.status[c] === "mixed" ? .5 : 0);
+  const comps = {};
+  M.comps.forEach((c, i) => comps[c] = Number.isNaN(cz[i]) ? null : Math.min(100, Math.max(0, M.a + M.b * (cz[i] / M.comp_sd[i]) * M.composite_sd)));
+  return { composite, grade, comps, measured: ws ? meas / ws : 0 };
+}
+
+// re-grade a board for a week range / custom minimum using per-game data
+async function regrade(board, stype, wk0, wk1, customMin) {
+  const G = await getFile(`games/${board}.json`);
+  if (!G) return [];
+  const inRange = g => g[1] >= wk0 && g[1] <= wk1 && (stype === "ALL" || g[2] === stype);
+  const teamGames = {};
+  for (const [t, list] of Object.entries(G.team_games)) {
+    const sel = list.filter(([w, st]) => w >= wk0 && w <= wk1 && (stype === "ALL" || st === stype));
+    teamGames[t] = { n: sel.length, snaps: sel.reduce((a, x) => a + x[2], 0) };
+  }
+  const rows = [];
+  const M = G.metrics.length;
+  for (const [id, p] of Object.entries(G.players)) {
+    const gs = p.g.filter(inRange);
+    if (!gs.length) continue;
+    const num = new Array(M).fill(0), den = new Array(M).fill(0);
+    let qv = 0, expo = 0, snaps = 0;
+    for (const g of gs) { for (let i = 0; i < M; i++) { num[i] += g[4][i]; den[i] += g[5][i]; } qv += g[6]; expo += g[7]; snaps += g[8]; }
+    const s = scoreRow(G, num, den);
+    if (Number.isNaN(s.composite)) continue;
+    const team = gs[gs.length - 1][3];
+    const tg = teamGames[team] || { n: gs.length, snaps: 0 };
+    let req = G.rule.stat === "snap_share" ? Math.ceil(G.rule.share * tg.snaps) : Math.ceil(G.rule.per_team_game * tg.n);
+    if (customMin !== "" && customMin != null) req = Number(customMin);
+    const trend = gs.slice(-5).map(g => { const c = scoreRow(G, g[4], g[5], 1.25).composite; return Math.round(Math.min(100, Math.max(0, G.game_cal.a + G.game_cal.b * c)) * 10) / 10; });
+    rows.push({
+      gsis_id: id, name: p.name, team, position: board, grade: Math.round(s.grade * 10) / 10, grade_band: null,
+      impact: Math.round(G.beta * (s.composite - G.replacement) * expo * 10) / 10, components: s.comps,
+      snaps: snaps, games: gs.length, qualifier_value: qv, qualifier_required: req, meets_minimum: qv >= req,
+      measured_share: Math.round(s.measured * 100) / 100, trend, provisional: false,
+    });
+  }
+  for (const [key, rk] of [["grade", "rank"], ["impact", "impact_rank"]]) {
+    rows.filter(r => r.meets_minimum).sort((a, b) => b[key] - a[key]).forEach((r, i) => r[rk] = i + 1);
+  }
+  return rows;
+}
+
+// ------------------------------------------------------------------ visuals
+const YARDS = [60, 70, 80, 90];
+function gradeColor(g) { return g >= 90 ? "var(--g4)" : g >= 80 ? "var(--g3)" : g >= 70 ? "var(--g2)" : g >= 60 ? "var(--g1)" : "var(--g0)"; }
+function gradeLabel(g) { return g >= 90 ? "Elite" : g >= 80 ? "High quality" : g >= 70 ? "Above average starter" : g >= 60 ? "Average" : "Replacement level"; }
+function field(g, band, big = false) {
+  const lines = YARDS.map(y => `<span class="yl" style="left:${y}%"></span>`).join("");
+  const b = band ? `<span class="band" style="left:${Math.max(0, g - band)}%;width:${Math.min(100, g + band) - Math.max(0, g - band)}%"></span>` : "";
+  return `<div class="field${big ? " big" : ""}" role="img" aria-label="Grade ${fmt(g)} of 100${band ? `, plus or minus ${fmt(band)}` : ""}"><span class="fill" style="width:${g}%;background:${gradeColor(g)}"></span>${b}${lines}</div>`;
+}
+function minis(row, meta) {
+  return `<div class="minis" aria-label="Component scores">${meta.components.map(c => {
+    const v = row.components[c.key];
+    return `<span class="${c.status === "estimated" ? "est" : ""}" title="${esc(c.label)}: ${v == null ? "no data" : fmt(v, 0)}${c.status === "estimated" ? " (estimated)" : ""}" style="height:${v == null ? 2 : Math.max(2, v / 100 * 22)}px;${v != null && v >= 90 && c.status !== "estimated" ? "background:var(--g4)" : ""}"></span>`;
+  }).join("")}</div>`;
+}
+function spark(vals, w = 74, h = 22) {
+  if (!vals || vals.length < 2) return `<svg width="${w}" height="${h}" aria-hidden="true"></svg>`;
+  const mn = Math.min(...vals), mx = Math.max(...vals), mid = (mn + mx) / 2, half = Math.max(6, (mx - mn) / 2 + 1);
+  const lo = mid - half, hi = mid + half, pts = vals.map((v, i) => [i / (vals.length - 1) * (w - 4) + 2, h - 2 - (Math.min(hi, Math.max(lo, v)) - lo) / (hi - lo) * (h - 4)]);
+  const last = pts[pts.length - 1];
+  return `<svg width="${w}" height="${h}" role="img" aria-label="Last ${vals.length} game grades: ${vals.join(", ")}"><polyline fill="none" stroke="var(--muted)" stroke-width="1.4" points="${pts.map(p => p.join(",")).join(" ")}"/><circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="${gradeColor(vals[vals.length - 1])}"/></svg>`;
+}
+function ring(share) {
+  const r = 7, c = 2 * Math.PI * r;
+  return `<span class="badge" title="${Math.round(share * 100)}% of this grade's weight comes from play-level measurement; the rest is estimated from team results"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="${r}" fill="none" stroke="var(--hair)" stroke-width="3"/><circle cx="9" cy="9" r="${r}" fill="none" stroke="var(--g2)" stroke-width="3" stroke-dasharray="${share * c} ${c}" transform="rotate(-90 9 9)"/></svg>${Math.round(share * 100)}%</span>`;
+}
+function lineChart(games) {
+  const W = 520, H = 170, L = 30, R = 10, Tp = 10, B = 24;
+  if (!games.length) return `<p class="note">No game grades yet.</p>`;
+  const weeks = games.map(g => g.week), w0 = Math.min(...weeks), w1 = Math.max(...weeks);
+  const x = w => L + (w1 === w0 ? (W - L - R) / 2 : (w - w0) / (w1 - w0) * (W - L - R));
+  const y = g => Tp + (1 - (Math.max(30, g) - 30) / 70) * (H - Tp - B);
+  const grid = [40, 60, 70, 80, 90, 100].map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--hair)" ${YARDS.includes(v) ? 'stroke-width="1.5"' : ""}/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join("");
+  const pts = games.map(g => [x(g.week), y(g.grade)]);
+  const path = pts.map((p, i) => (i ? "L" : "M") + p.join(",")).join("");
+  const dots = games.map((g, i) => `<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="4" fill="${gradeColor(g.grade)}" ${g.provisional ? 'stroke="var(--pylon)" stroke-dasharray="2 2" fill-opacity=".4"' : ""}><title>Week ${g.week}: ${g.grade}${g.provisional ? " (provisional)" : ""}</title></circle><text x="${pts[i][0]}" y="${H - 6}" text-anchor="middle">W${g.week}</text>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grade by week">${grid}<path d="${path}" fill="none" stroke="var(--muted)" stroke-width="1.6"/>${dots}</svg>`;
+}
+function fmtMetric(v, unit) {
+  if (v == null) return "–";
+  if (unit === "pct") return (v * 100).toFixed(1) + "%";
+  if (unit === "pp") return v.toFixed(1);
+  if (unit === "epa" || unit === "pts") return v.toFixed(3);
+  return v.toFixed(2);
+}
+
+// ------------------------------------------------------------------ chrome
+function renderNav() {
+  for (const [grp, list] of Object.entries(BOARDS)) {
+    $("#nav-" + grp).innerHTML = list.map(([k, n]) => `<a href="#/board/${k}" data-board="${k}"><span class="abbr">${k}</span><span class="full">${n}</span></a>`).join("");
+  }
+}
+function markNav() {
+  const h = location.hash || "#/board/QB";
+  document.querySelectorAll(".nav a").forEach(a => a.getAttribute("href") === h || (h.startsWith("#/board/") && a.dataset.board === S.board && h.split("/")[2] === a.dataset.board) ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+}
+function renderStype() {
+  document.querySelectorAll("#stype button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === S.stype)));
+}
+function renderPill() {
+  const m = S.manifest, el = $("#pill");
+  if (!m) return;
+  const when = new Date(m.generated_at);
+  const t = when.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+  const pend = m.pending_games.length;
+  const ftn = pend ? `FTN charting pending for ${pend} game${pend > 1 ? "s" : ""}` : "FTN charting complete";
+  el.innerHTML = `<span class="dot ${S.offline ? "offline" : pend ? "pending" : ""}"></span><span>Through Week ${m.through_week} · ${ftn} · updated ${t}${S.offline ? " · offline" : ""}</span>`;
+}
+function banner(html, cls = "") { $("#banner").innerHTML = html ? `<div class="banner ${cls}">${html}</div>` : ""; }
+
+// ------------------------------------------------------------------ rankings view
+async function viewBoard(board) {
+  S.board = board;
+  const v = $("#view");
+  const through = S.manifest.through_week || 1;
+  if (S.wk0 == null) { S.wk0 = 1; S.wk1 = Math.max(through, 1); }
+  const meta = await getFile(`rankings/${S.stype}/${board}.json`) || await getFile(`rankings/ALL/${board}.json`);
+  const full = S.wk0 <= 1 && S.wk1 >= through;
+  let rows = meta ? meta.rows : [];
+  if (!full || S.customMin !== "") {
+    rows = full ? rows.map(r => ({ ...r, qualifier_required: Number(S.customMin), meets_minimum: r.qualifier_value >= Number(S.customMin) })) : await regrade(board, S.stype, S.wk0, S.wk1, S.customMin);
+    if (full) for (const [key, rk] of [["grade", "rank"], ["impact", "impact_rank"]]) { rows.forEach(r => r[rk] = null); rows.filter(r => r.meets_minimum).sort((a, b) => b[key] - a[key]).forEach((r, i) => r[rk] = i + 1); }
+  }
+  const teams = [...new Set(rows.map(r => r.team).filter(Boolean))].sort();
+  let shown = rows.filter(r => (!S.team || r.team === S.team) && (!S.minimums || r.meets_minimum));
+  const key = S.sortKey === "default" ? S.metric : S.sortKey;
+  const val = r => key.startsWith("c:") ? (r.components[key.slice(2)] ?? -1) : key === "name" || key === "team" ? r[key] || "" : r[key] ?? -1e9;
+  shown.sort((a, b) => { const x = val(a), y = val(b); return (typeof x === "string" ? x.localeCompare(y) : x - y) * S.sortDir; });
+  const weekOpts = sel => Array.from({ length: through }, (_, i) => `<option value="${i + 1}" ${sel === i + 1 ? "selected" : ""}>${i + 1}</option>`).join("");
+  const comps = meta ? meta.components : [];
+  const qstat = rows[0]?.qualifier_stat || (["OT","IOL","EDGE","IDL","LB","CB","S"].includes(board) ? "snaps" : "attempts");
+  const th = (k, label, cls = "") => `<th class="${cls}" ${key === k ? `aria-sort="${S.sortDir < 0 ? "descending" : "ascending"}"` : ""}><button data-sort="${k}">${label}${key === k ? (S.sortDir < 0 ? " ↓" : " ↑") : ""}</button></th>`;
+  v.innerHTML = `
+    <div class="headrow">
+      <div><h1>${esc(BOARD_NAME[board] || board)}</h1>
+      <p class="sub">${shown.length} ${shown.length === 1 ? "player" : "players"}${S.minimums ? " meeting the NFL leaderboard minimum" : ""} · ${S.stype === "ALL" ? "regular season and playoffs" : S.stype === "REG" ? "regular season" : "playoffs"}${full ? "" : ` · weeks ${S.wk0}–${S.wk1}`}</p></div>
+      <div class="seg" role="group" aria-label="Rank by" style="margin-left:auto">
+        <button data-metric="grade" aria-pressed="${S.metric === "grade"}">Grade</button><button data-metric="impact" aria-pressed="${S.metric === "impact"}">Impact</button>
+      </div>
+    </div>
+    <div class="filters">
+      <label>Team <select id="f-team"><option value="">All teams</option>${teams.map(t => `<option ${t === S.team ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+      <label>Weeks <select id="f-w0" aria-label="From week">${weekOpts(S.wk0)}</select>to<select id="f-w1" aria-label="To week">${weekOpts(S.wk1)}</select></label>
+      <label><input type="checkbox" id="f-min" ${S.minimums ? "checked" : ""}> Meets NFL minimums</label>
+      <label>Custom minimum <input type="number" min="0" id="f-cmin" value="${esc(S.customMin)}" placeholder="${esc(qstat)}" title="Minimum ${esc(qstat)} to qualify"></label>
+      ${full ? "" : `<span class="note">Re-graded for this week range; bands appear on the full-season view.</span>`}
+    </div>
+    ${shown.length ? `<table class="rank-table">
+      <thead><tr>${th("rank", "#", "")}${th("name", "Player")}${th("team", "Team")}${th("grade", "Grade")}${th("impact", "Impact", "")}
+      <th class="hide-sm">Components</th><th class="hide-sm">Last 5</th>${th("snaps", "Snaps", "hide-sm")}${th("measured_share", "Measured", "hide-sm")}</tr></thead>
+      <tbody>${shown.map(r => `
+        <tr class="${r.meets_minimum ? "" : "below"}" data-id="${r.gsis_id}" tabindex="0">
+          <td class="rk">${r.rank ?? "–"}</td>
+          <td><span class="pname">${esc(r.name)}</span>${r.meets_minimum ? "" : `<span class="ptag">below minimum</span>`}${r.provisional ? `<span class="ptag">provisional</span>` : ""}</td>
+          <td class="team">${esc(r.team || "")}</td>
+          <td><div class="gcell"><span class="gnum" style="color:${r.grade >= 90 ? "var(--g4)" : "inherit"}">${fmt(r.grade)}</span><span class="gband">${r.grade_band != null ? "±" + fmt(r.grade_band, 0) : ""}</span>${field(r.grade, r.grade_band)}</div></td>
+          <td class="impact ${r.impact < 0 ? "neg" : ""}">${signed(r.impact)}</td>
+          <td class="hide-sm">${minis(r, meta)}</td>
+          <td class="hide-sm">${spark(r.trend)}</td>
+          <td class="snapcol hide-sm">${r.snaps}</td>
+          <td class="hide-sm">${ring(r.measured_share)}</td>
+        </tr>`).join("")}</tbody></table>`
+      : `<div class="empty"><h2>No players to rank yet</h2><p>${S.stype === "POST" ? "Playoff boards fill in once postseason games are played and charted." : S.minimums ? "Nobody meets the NFL minimum for this selection. Turn off “Meets NFL minimums” to see everyone graded." : "No graded players for this selection."}</p></div>`}`;
+  v.querySelectorAll("[data-sort]").forEach(b => b.onclick = () => { const k = b.dataset.sort; if (S.sortKey === k) S.sortDir *= -1; else { S.sortKey = k; S.sortDir = ["name", "team", "rank"].includes(k) ? 1 : -1; } viewBoard(board); });
+  v.querySelectorAll("[data-metric]").forEach(b => b.onclick = () => { S.metric = b.dataset.metric; S.sortKey = S.metric; S.sortDir = -1; viewBoard(board); });
+  $("#f-team").onchange = e => { S.team = e.target.value; viewBoard(board); };
+  $("#f-w0").onchange = e => { S.wk0 = +e.target.value; if (S.wk1 < S.wk0) S.wk1 = S.wk0; viewBoard(board); };
+  $("#f-w1").onchange = e => { S.wk1 = +e.target.value; if (S.wk0 > S.wk1) S.wk0 = S.wk1; viewBoard(board); };
+  $("#f-min").onchange = e => { S.minimums = e.target.checked; viewBoard(board); };
+  $("#f-cmin").onchange = e => { S.customMin = e.target.value.trim(); viewBoard(board); };
+  v.querySelectorAll("tbody tr").forEach(tr => {
+    const go = () => location.hash = `#/player/${tr.dataset.id}?board=${board}`;
+    tr.onclick = go; tr.onkeydown = e => { if (e.key === "Enter") go(); };
+  });
+}
+
+// ------------------------------------------------------------------ player page
+const EST_NOTE = {
+  pass_protection: "Team pressures and sacks over expected, charged to this player's unit by snap share.",
+  run_blocking: "Team run results through this player's gaps (or on outside runs), adjusted for opponent and box count.",
+};
+async function viewPlayer(id, params) {
+  const v = $("#view");
+  const p = await getFile(`players/${id}.json`);
+  if (!p) { v.innerHTML = `<div class="empty"><h2>Player not found</h2><p>This player has no graded snaps in ${S.season}. Try searching for another name.</p></div>`; return; }
+  const st = p.boards[S.stype] ? S.stype : Object.keys(p.boards)[0];
+  const boards = Object.keys(p.boards[st]);
+  const board = boards.includes(params.get("board")) ? params.get("board") : boards[0];
+  const b = p.boards[st][board];
+  const meta = await getFile(`rankings/${st}/${board}.json`);
+  const qualifiedCount = meta ? meta.rows.filter(r => r.meets_minimum).length : 0;
+  const compMeta = meta ? meta.components : [];
+  const groups = compMeta.map(c => ({ ...c, rows: b.metrics.filter(m => m.component === c.key) }));
+  v.innerHTML = `
+    <button class="back" onclick="history.back()">← Back</button>
+    <div class="phead">
+      ${p.headshot ? `<img src="${esc(p.headshot)}" alt="" onerror="this.style.visibility='hidden'">` : `<span></span>`}
+      <div><h1>${esc(p.name)}</h1>
+      <p class="sub">${esc(b.team || p.team || "")} · ${esc(BOARD_NAME[board])} · ${b.games} game${b.games === 1 ? "" : "s"}, ${b.snaps} snaps${b.provisional ? " · includes a game still awaiting FTN charting" : ""}</p>
+      ${boards.length > 1 ? `<div class="tabs" role="group" aria-label="Board">${boards.map(k => `<button aria-pressed="${k === board}" data-b="${k}">${esc(BOARD_NAME[k])}</button>`).join("")}</div>` : ""}</div>
+    </div>
+    <div class="scorebox">
+      <div>
+        <div class="bignum" style="color:${b.grade >= 90 ? "var(--g4)" : "inherit"}">${fmt(b.grade)}${b.grade_band != null ? `<small>±${fmt(b.grade_band, 0)}</small>` : ""}</div>
+        <div class="biglabel">${gradeLabel(b.grade)} · ${b.rank ? `#${b.rank} of ${qualifiedCount} qualified` : `below the NFL minimum (${b.qualifier_value} of ${b.qualifier_required} ${esc(b.qualifier_stat || "")})`}</div>
+        <div style="margin-top:12px">${field(b.grade, b.grade_band, true)}<div class="yardlabels">${YARDS.map(y => `<span style="left:${y}%">${y}</span>`).join("")}</div></div>
+      </div>
+      <div>
+        <div class="bignum ${b.impact < 0 ? "negp" : ""}">${signed(b.impact)}</div>
+        <div class="biglabel">Impact: expected points above replacement${b.impact_rank ? ` · #${b.impact_rank}` : ""}</div>
+        <div style="margin-top:12px">${ring(b.measured_share)} <span class="note">measured</span></div>
+      </div>
+    </div>
+    <div class="twocol">
+      <section><h2>Grade by week</h2>${lineChart(b.game_log || [])}</section>
+      <section><h2>Components</h2>${compMeta.map(c => { const s = b.components[c.key]; return `
+        <div class="comprow"><div class="lbl">${esc(c.label)}<small>${Math.round(c.weight * 100)}% of grade${c.status === "estimated" ? " · estimated" : ""}</small></div>
+        ${s == null ? `<span class="note">No data yet</span>` : field(s)}<span class="num">${s == null ? "–" : fmt(s, 0)}</span></div>`; }).join("")}
+      </section>
+    </div>
+    <h2>Every metric</h2>
+    <table class="mt" style="max-width:1100px">
+      <thead><tr><th>Metric</th><th>Source</th><th class="r">Value</th><th class="r">Percentile</th><th class="r">League avg</th><th class="r">Sample</th><th class="r">Grade points</th></tr></thead>
+      <tbody>${groups.map(g => `
+        <tr class="group"><td colspan="7">${esc(g.label)}${g.status === "estimated" ? ` <span class="estimated-tag">Estimated</span><span class="note">${esc(EST_NOTE[g.key] || "Apportioned from team results by snap share.")}</span>` : ""}</td></tr>
+        ${g.rows.map(m => `<tr>
+          <td>${esc(m.label)}${m.lower_better ? ` <span class="note">(lower is better)</span>` : ""}${m.status === "estimated" && g.status !== "estimated" ? ` <span class="estimated-tag">Estimated</span>` : ""}</td>
+          <td class="note">${esc(m.source)}</td>
+          <td class="r num">${fmtMetric(m.raw, m.unit)}</td>
+          <td class="r">${m.percentile == null ? "–" : `<span class="pctbar"><i style="width:${m.percentile}%"></i></span>${Math.round(m.percentile)}`}</td>
+          <td class="r num">${fmtMetric(m.league_avg, m.unit)}</td>
+          <td class="r num">${m.sample ? fmt(m.sample, 0) : "–"}</td>
+          <td class="r num ${m.grade_points > 0 ? "pos" : m.grade_points < 0 ? "negp" : ""}">${m.grade_points == null ? "–" : signed(m.grade_points)}</td>
+        </tr>`).join("")}`).join("")}</tbody>
+    </table>
+    <h2>Game log</h2>
+    ${(b.game_log || []).length ? `<table class="mt" style="max-width:520px"><thead><tr><th>Week</th><th>Game</th><th class="r">Game grade</th></tr></thead><tbody>
+      ${b.game_log.slice().reverse().map(g => `<tr><td class="num">${g.week}</td><td>${esc(g.game_id.split("_").slice(2).join(" at "))}${g.provisional ? ` <span class="estimated-tag">Provisional</span>` : ""}</td><td class="r">${field(g.grade).replace('class="field"', 'class="field" style="display:inline-block;width:90px;vertical-align:middle;margin-right:8px"')}<span class="num">${fmt(g.grade)}</span></td></tr>`).join("")}
+    </tbody></table>` : `<p class="note">No games in this selection.</p>`}
+    <p style="margin-top:22px"><a href="#/compare?board=${board}&ids=${id}">Compare ${esc(p.name)} with other ${esc(BOARD_NAME[board]).toLowerCase()}s</a></p>`;
+  v.querySelectorAll("[data-b]").forEach(btn => btn.onclick = () => location.hash = `#/player/${id}?board=${btn.dataset.b}`);
+}
+
+// ------------------------------------------------------------------ compare
+async function viewCompare(params) {
+  const v = $("#view");
+  const board = params.get("board") || S.board;
+  const ids = (params.get("ids") || "").split(",").filter(Boolean).slice(0, 3);
+  const players = (await Promise.all(ids.map(i => getFile(`players/${i}.json`)))).filter(Boolean);
+  const pick = players.map(p => { const st = p.boards[S.stype] ? S.stype : Object.keys(p.boards)[0]; return { p, b: p.boards[st]?.[board] }; }).filter(x => x.b);
+  const meta = await getFile(`rankings/${S.stype}/${board}.json`) || await getFile(`rankings/ALL/${board}.json`);
+  const setIds = list => location.hash = `#/compare?board=${board}&ids=${list.join(",")}`;
+  const best = (vals, lowerBetter) => { const nums = vals.filter(x => x != null); if (nums.length < 2) return null; return lowerBetter ? Math.min(...nums) : Math.max(...nums); };
+  const row = (label, vals, f, lowerBetter = false) => { const bv = best(vals, lowerBetter); return `<tr><td>${label}</td>${vals.map(x => `<td class="num ${x != null && x === bv ? "best" : ""}">${x == null ? "–" : f(x)}</td>`).join("")}</tr>`; };
+  let body = "";
+  if (pick.length) {
+    body += row("Grade", pick.map(x => x.b.grade), x => fmt(x));
+    body += row("Impact", pick.map(x => x.b.impact), x => signed(x));
+    body += row("Position rank", pick.map(x => x.b.rank), x => "#" + x, true);
+    body += row("Measured share", pick.map(x => x.b.measured_share), x => Math.round(x * 100) + "%");
+    for (const c of meta?.components || []) {
+      body += `<tr><td colspan="${pick.length + 1}" style="font-family:var(--cond);font-weight:600;font-size:17px;color:var(--ink);padding-top:16px">${esc(c.label)}${c.status === "estimated" ? ' <span class="estimated-tag">Estimated</span>' : ""}</td></tr>`;
+      body += row("Component score", pick.map(x => x.b.components[c.key]), x => fmt(x, 0));
+      const ms = pick[0].b.metrics.filter(m => m.component === c.key);
+      for (const m of ms) {
+        const vals = pick.map(x => x.b.metrics.find(y => y.metric === m.metric)?.raw ?? null);
+        body += row(esc(m.label), vals, x => fmtMetric(x, m.unit), m.lower_better);
+      }
+    }
+  }
+  v.innerHTML = `<h1>Compare</h1><p class="sub">Up to three ${esc((BOARD_NAME[board] || "").toLowerCase())}s side by side. Best value in each row is highlighted.</p>
+    <div class="filters"><label>Board <select id="c-board">${Object.entries(BOARD_NAME).map(([k, n]) => `<option value="${k}" ${k === board ? "selected" : ""}>${n}</option>`).join("")}</select></label></div>
+    <div class="picker">${pick.map(x => `<span class="chip">${esc(x.p.name)} <button aria-label="Remove ${esc(x.p.name)}" data-rm="${x.p.gsis_id}">✕</button></span>`).join("")}
+      ${pick.length < 3 ? `<input id="c-add" list="c-list" placeholder="Add a ${esc((BOARD_NAME[board] || "").toLowerCase())}"><datalist id="c-list"></datalist>` : ""}</div>
+    ${pick.length ? `<table class="cmp"><thead><tr><th></th>${pick.map(x => `<th><a href="#/player/${x.p.gsis_id}?board=${board}" style="text-decoration:none">${esc(x.p.name)}</a><div class="note" style="font-family:var(--body);font-weight:400">${esc(x.b.team || "")}</div></th>`).join("")}</tr></thead><tbody>${body}</tbody></table>`
+      : `<div class="empty"><p>Add a player to start a comparison. Only players graded on the ${esc(BOARD_NAME[board])} board can be compared here, so positions are never mixed.</p></div>`}`;
+  $("#c-board").onchange = e => location.hash = `#/compare?board=${e.target.value}&ids=`;
+  v.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => setIds(ids.filter(i => i !== b.dataset.rm)));
+  const add = $("#c-add");
+  if (add) {
+    const rows = meta ? meta.rows : [];
+    $("#c-list").innerHTML = rows.map(r => `<option value="${esc(r.name)} (${esc(r.team || "")})">`).join("");
+    add.onchange = () => { const r = rows.find(r => `${r.name} (${r.team || ""})` === add.value || r.name === add.value); if (r && !ids.includes(r.gsis_id)) setIds([...ids, r.gsis_id]); };
+  }
+}
+
+// ------------------------------------------------------------------ methodology
+async function viewMethod(params) {
+  const v = $("#view");
+  const M = await getFile("methodology.json");
+  const board = params.get("board") || S.board;
+  const B = M.boards[board];
+  const settings = (await store.get("settings")) || {};
+  const pct = x => x == null ? "–" : Math.round(x * 100) + "%";
+  v.innerHTML = `<div class="prose"><h1>Methodology</h1>
+    <p class="sub">How every grade is built, with the weights currently in use. Nothing here is hidden from the grades you see.</p>
+    <p>Each play is credited to players, adjusted for opponent and situation with a ridge regression, shrunk toward the position average in proportion to sample size, compared with qualified players at the same position across 2022–2026, and combined into components. Component weights are fit to predict each player's value over the following eight games, then blended with the design priors. The composite maps to 0–100 with a fixed scale per position.</p></div>
+    <div class="filters"><label>Board <select id="m-board">${Object.entries(BOARD_NAME).map(([k, n]) => `<option value="${k}" ${k === board ? "selected" : ""}>${n}</option>`).join("")}</select></label></div>
+    <h2>${esc(B.name)} weights</h2>
+    <table class="mt" style="max-width:820px"><thead><tr><th>Component</th><th>Status</th><th class="r">Prior</th><th class="r">Fitted</th><th class="r">Used</th></tr></thead><tbody>
+      ${B.components.map(c => `<tr><td>${esc(c.label)}</td><td>${c.status === "measured" ? "Measured" : c.status === "estimated" ? '<span class="estimated-tag">Estimated</span>' : "Mixed"}</td><td class="r">${pct(B.weights.prior[c.key])}</td><td class="r">${pct(B.weights.fitted?.[c.key])}</td><td class="r"><b>${pct(B.weights.used[c.key])}</b></td></tr>`).join("")}
+    </tbody></table>
+    <p class="note">Weight fit on ${B.weights.n ?? 0} player-seasons; explained ${B.weights.r2 == null ? "–" : (B.weights.r2 * 100).toFixed(1) + "%"} of next-eight-games value (target: ${esc((B.weights.target || []).join(" + "))}). Grade = ${fmt(B.calibration?.a, 1)} + ${fmt(B.calibration?.b, 1)} × composite. Impact scale: ${B.impact ? B.impact.beta.toFixed(4) : "–"} ${esc(B.impact?.unit || "")} (${esc(B.impact?.source || "")}); replacement = the #${B.replacement_rank} qualified player.</p>
+    ${B.validation ? `<h2>Backtest, 2022–2025</h2>
+    <table class="mt" style="max-width:820px"><thead><tr><th>Test</th><th>Result</th><th>Bar</th><th>Pass</th></tr></thead><tbody>
+      <tr><td>Stability (odd vs even games)</td><td class="num">r = ${fmt(B.validation.stability.grade_r, 2)}</td><td class="note">Best single metric r = ${fmt(B.validation.stability.best_single_metric_r, 2)}</td><td>${B.validation.stability.pass ? "Yes" : "No"}</td></tr>
+      <tr><td>Predictiveness (weeks 1–8 → 9–18)</td><td class="num">r = ${fmt(B.validation.predictiveness.grade_r, 2)}</td><td class="note">${Object.entries(B.validation.predictiveness.comparators).map(([k, r]) => `${esc(k)} r = ${fmt(r, 2)}`).join("; ") || "No counting-stat comparator"}</td><td>${B.validation.predictiveness.pass ? "Yes" : "No"}</td></tr>
+    </tbody></table>
+    <p class="note">Top of the 2025 board, for comparison with All-Pro voting: ${B.validation.top_2025.map(t => `${esc(t.name)} ${fmt(t.grade)}`).join(", ")}.</p>` : ""}
+    <h2>Metrics</h2>
+    <table class="mt" style="max-width:1000px"><thead><tr><th>Metric</th><th>Component</th><th>Source</th><th class="r">Half-signal sample (k)</th></tr></thead><tbody>
+      ${B.components.flatMap(c => c.metrics.map(m => `<tr><td>${esc(m.label)}${m.lower_better ? ' <span class="note">(lower is better)</span>' : ""}${m.status === "estimated" ? ' <span class="estimated-tag">Estimated</span>' : ""}</td><td>${esc(c.label)}</td><td class="note">${esc(m.source)}</td><td class="r num">${fmt(m.k, 0)}</td></tr>`)).join("")}
+    </tbody></table>
+    <h2>Grade scale</h2>
+    <table class="mt" style="max-width:600px"><thead><tr><th>Grade</th><th>Label</th><th>Share of qualified players</th></tr></thead><tbody>
+      ${M.calibration_table.map(r => `<tr><td class="num">${esc(r.range)}</td><td>${esc(r.label)}</td><td>${esc(r.target)}</td></tr>`).join("")}</tbody></table>
+    <h2>Metrics left out</h2>
+    <p class="note">Described in the design but not available from free data, so dropped rather than invented. Their components were renormalized.</p>
+    <table class="mt" style="max-width:1000px"><tbody>${M.dropped_metrics.map(d => `<tr><td>${esc(d.position)}</td><td>${esc(d.metric)}</td><td class="note">${esc(d.reason)}</td></tr>`).join("")}</tbody></table>
+    <h2>Data freshness</h2>
+    <table class="mt" style="max-width:600px"><thead><tr><th>Feed</th><th>Last updated by nflverse</th></tr></thead><tbody>
+      ${Object.entries(M.feeds).map(([k, t]) => `<tr><td>${esc({pbp:"Play-by-play",ftn:"FTN charting",ngs:"Next Gen Stats",pfr:"PFR advanced stats",snaps:"PFR snap counts",players:"Players",rosters:"Rosters",depth:"Depth charts"}[k] || k)}</td><td class="num">${esc(t)}</td></tr>`).join("")}
+    </tbody></table>
+    <p class="note">Snapshot generated ${new Date(S.manifest.generated_at).toLocaleString()}. Baseline built ${esc(M.baseline.built_at || "–")} from ${esc((M.baseline.seasons || []).join(", "))}.</p>
+    <div class="prose"><h2>Notes</h2>${M.notes.map(n => `<p>${esc(n)}</p>`).join("")}
+    <h2>About the data</h2>${M.attribution.map(n => `<p>${esc(n)}</p>`).join("")}
+    <h2>Data source</h2>
+    <p class="note">Where the app downloads grades from. Leave blank to use the address this build was configured with.</p>
+    <p><input id="m-base" style="width:min(460px,100%);padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raise)" value="${esc(settings.base || "")}" placeholder="${esc(S.base || "https://username.github.io/gridline/")}"> <button id="m-save" class="tabs" style="border:1px solid var(--line);background:var(--raise);border-radius:8px;padding:5px 12px;cursor:pointer">Save and reload</button></p></div>`;
+  $("#m-board").onchange = e => location.hash = `#/method?board=${e.target.value}`;
+  $("#m-save").onclick = async () => { await store.set("settings", { base: $("#m-base").value.trim() }); location.reload(); };
+}
+
+// ------------------------------------------------------------------ search
+let INDEX = [];
+function fuzzy(q, list) {
+  q = q.toLowerCase().trim();
+  if (!q) return [];
+  const toks = q.split(/\s+/);
+  const scored = [];
+  for (const p of list) {
+    const hay = `${p.name} ${p.team || ""} ${p.pos} ${(p.boards || []).join(" ")}`.toLowerCase();
+    let s = 0, ok = true;
+    for (const t of toks) {
+      const i = hay.indexOf(t);
+      if (i < 0) { // subsequence fallback
+        let j = 0; for (const ch of hay) if (ch === t[j]) j++;
+        if (j < t.length) { ok = false; break; }
+        s += 5;
+      } else s += i === 0 || hay[i - 1] === " " ? 0 : 2;
+    }
+    if (ok) scored.push([s + p.name.length / 100, p]);
+  }
+  return scored.sort((a, b) => a[0] - b[0]).slice(0, 30).map(x => x[1]);
+}
+function openPalette(seed = "") {
+  const pal = $("#palette"), inp = $("#pq");
+  pal.classList.add("open"); inp.value = seed; inp.focus(); drawList();
+}
+function closePalette() { $("#palette").classList.remove("open"); }
+let sel = 0;
+function drawList() {
+  const res = fuzzy($("#pq").value, INDEX);
+  sel = Math.min(sel, Math.max(0, res.length - 1));
+  $("#plist").innerHTML = res.length ? res.map((p, i) => `<li role="option" aria-selected="${i === sel}" data-id="${p.id}" data-b="${p.boards[0] || p.pos}"><span class="team">${esc(p.team || "")}</span><span>${esc(p.name)}</span><span class="pos">${esc(p.boards.join(" · "))}</span></li>`).join("")
+    : `<li style="cursor:default" class="note">${$("#pq").value ? "No player matches that. Try a last name or a team code like KC." : "Type a name, team or position."}</li>`;
+  $("#plist").querySelectorAll("li[data-id]").forEach(li => li.onclick = () => { closePalette(); location.hash = `#/player/${li.dataset.id}?board=${li.dataset.b}`; });
+}
+
+// ------------------------------------------------------------------ router
+async function route() {
+  const h = location.hash || "#/board/QB";
+  const [path, qs] = h.slice(1).split("?");
+  const params = new URLSearchParams(qs || "");
+  const parts = path.split("/").filter(Boolean);
+  closePalette();
+  markNav();
+  try {
+    if (parts[0] === "player") await viewPlayer(parts[1], params);
+    else if (parts[0] === "compare") await viewCompare(params);
+    else if (parts[0] === "method") await viewMethod(params);
+    else await viewBoard(BOARD_NAME[parts[1]] ? parts[1] : "QB");
+  } catch (e) {
+    console.error(e);
+    $("#view").innerHTML = `<div class="empty"><h2>This page couldn't load</h2><p>${esc(e.message)}. The app keeps working from the last snapshot it downloaded; check your connection and it will retry in 30 minutes, or reload now.</p></div>`;
+  }
+  markNav();
+  $("#view").scrollTop = 0;
+}
+
+async function refresh(first = false) {
+  const before = S.manifest?.generated_at;
+  try { await loadManifest(); }
+  catch (e) {
+    $("#view").innerHTML = `<div class="empty"><h2>No data yet</h2><p>Gridline couldn't reach its data source${S.base ? ` at ${esc(S.base)}` : ""} and has no saved snapshot. Check your connection, or set the data source on the Methodology page once the first grading run has published.</p><p><button class="back" onclick="location.hash='#/method'">Open data source settings</button></p></div>`;
+    $("#pill").innerHTML = `<span class="dot offline"></span><span>No data</span>`;
+    return;
+  }
+  renderPill();
+  if (first || S.manifest.generated_at !== before) {
+    try { INDEX = (await getFile("search_index.json")) || []; } catch {}
+    if (!first) S.wk0 = S.wk1 = null;
+    await route();
+    prefetch().catch(() => {});
+  }
+}
+
+async function checkAppUpdate() {
+  if (!T) return;
+  try {
+    const ver = await T.core.invoke("check_update");
+    if (ver) {
+      banner(`Gridline ${esc(ver)} is ready. <button id="upd">Restart to update</button>`);
+      $("#upd").onclick = async () => { banner("Installing update…"); try { await T.core.invoke("install_update"); } catch (e) { banner(`The update couldn't install: ${esc(e)}. It will try again next launch.`, "err"); } };
+    }
+  } catch {}
+}
+
+// ------------------------------------------------------------------ boot
+(async function main() {
+  renderNav(); renderStype();
+  const settings = await store.get("settings");
+  S.base = resolveBase(settings);
+  document.querySelectorAll("#stype button").forEach(b => b.onclick = () => { S.stype = b.dataset.v; renderStype(); route(); });
+  window.addEventListener("hashchange", route);
+  const q = $("#q");
+  q.addEventListener("focus", () => { openPalette(q.value); q.blur(); });
+  q.addEventListener("input", () => openPalette(q.value));
+  $("#pq").addEventListener("input", () => { sel = 0; drawList(); });
+  $("#pq").addEventListener("keydown", e => {
+    const items = [...$("#plist").querySelectorAll("li[data-id]")];
+    if (e.key === "ArrowDown") { sel = Math.min(items.length - 1, sel + 1); drawList(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { sel = Math.max(0, sel - 1); drawList(); e.preventDefault(); }
+    else if (e.key === "Enter" && items[sel]) items[sel].click();
+    else if (e.key === "Escape") closePalette();
+  });
+  $("#palette").addEventListener("click", e => { if (e.target.id === "palette") closePalette(); });
+  document.addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); openPalette(); }
+    if (e.key === "Escape") closePalette();
+  });
+  await refresh(true);
+  setInterval(() => refresh(false), POLL_MS);
+  checkAppUpdate();
+})();
+</script>
+</body>
+</html>

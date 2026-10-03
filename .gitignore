@@ -1,0 +1,16 @@
+# data and build output
+data/
+site/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# app build output
+app/node_modules/
+app/ui-dist/
+app/src-tauri/target/
+app/src-tauri/gen/
+app/src-tauri/tauri.updater.conf.json
+*.key
+*.key.pub
+.DS_Store

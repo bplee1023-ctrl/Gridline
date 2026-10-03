@@ -1,0 +1,20 @@
+# NFL leaderboard minimums, expressed per TEAM GAME played so far.
+# Source: Pro-Football-Reference "Minimum requirements for leaderboards".
+# Season totals round up (e.g. QB 14 x 17 = 238).
+# Boards with no NFL minimum use a share of the team's offensive or defensive snaps.
+
+QB:   {stat: pass_attempts, per_team_game: 14}
+RB:   {stat: rush_attempts, per_team_game: 6.25}
+WR:   {stat: receptions,    per_team_game: 1.875}
+TE:   {stat: receptions,    per_team_game: 1.875}
+K:    {stat: fg_attempts,   per_team_game: 1}
+P:    {stat: punts,         per_team_game: 2.5}
+RET:  {stat: returns,       per_team_game: 1.25}   # punt returns OR kick returns, either type
+
+OT:   {stat: snap_share, share: 0.25, side: offense}
+IOL:  {stat: snap_share, share: 0.25, side: offense}
+EDGE: {stat: snap_share, share: 0.25, side: defense}
+IDL:  {stat: snap_share, share: 0.25, side: defense}
+LB:   {stat: snap_share, share: 0.25, side: defense}
+CB:   {stat: snap_share, share: 0.25, side: defense}
+S:    {stat: snap_share, share: 0.25, side: defense}

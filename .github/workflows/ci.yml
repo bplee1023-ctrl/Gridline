@@ -1,0 +1,20 @@
+# Unit tests and the golden-snapshot test on every push.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Unit + golden-snapshot tests
+        run: python -m pytest tests -q --ignore=tests/test_ui.py -m "not network"

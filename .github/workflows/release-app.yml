@@ -1,0 +1,69 @@
+# Builds the universal (Apple Silicon + Intel) Mac app and attaches Gridline.dmg to a GitHub Release.
+# Trigger: push a tag like v1.0.1, or run it by hand.
+# If the repo has the updater key set up (see SETUP.md), the release also carries the signed
+# update bundle and latest.json, and installed copies update themselves.
+name: Release app
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    env:
+      GRIDLINE_UPDATER_PUBKEY: ${{ vars.UPDATER_PUBKEY }}
+      GRIDLINE_VERSION: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+
+      - name: Install
+        working-directory: app
+        run: npm ci
+
+      - name: Configure
+        id: cfg
+        working-directory: app
+        run: |
+          node scripts/configure.mjs
+          if [ -f src-tauri/tauri.updater.conf.json ]; then
+            echo "args=--target universal-apple-darwin --config src-tauri/tauri.updater.conf.json" >> "$GITHUB_OUTPUT"
+            echo "updater=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=--target universal-apple-darwin" >> "$GITHUB_OUTPUT"
+            echo "updater=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Building without auto-update (UPDATER_PUBKEY variable not set)."
+          fi
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          args: ${{ steps.cfg.outputs.args }}
+          tagName: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'app-v__VERSION__' }}
+          releaseName: Gridline ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'v__VERSION__' }}
+          releaseBody: Download Gridline_*_universal.dmg below, open it and drag Gridline to Applications. First launch only — System Settings → Privacy & Security → Open Anyway.
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: ${{ steps.cfg.outputs.updater == 'true' }}

@@ -1,0 +1,103 @@
+# Pulls new nflverse data, re-grades the season, tests the result and publishes it to GitHub Pages.
+# Runs at :30 past 00, 06, 12 and 18 UTC all season and exits early when no feed changed.
+# Thursday's run is a forced full rebuild to pick up NFL stat corrections.
+name: Grade
+
+on:
+  schedule:
+    - cron: "30 0,6,12,18 * * *"
+    - cron: "45 14 * * 4"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-grade even if no feed changed"
+        type: boolean
+        default: true
+      rebuild_baseline:
+        description: "Rebuild the 2015-2025 baseline first (season end / methodology change)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: grade
+  cancel-in-progress: false
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      changed: ${{ steps.run.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pipeline
+        run: pip install -r requirements.txt
+
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Get modeling baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data/baseline
+          if [ "${{ inputs.rebuild_baseline }}" = "true" ] || ! gh release download baseline -p baseline_stats.json -D data/baseline --clobber; then
+            echo "Building baseline from 2015-2025 history (first run or requested)…"
+            python -m pipeline.baseline.build --upload
+          fi
+
+      - name: Grade
+        id: run
+        env:
+          GRIDLINE_PAGES_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          FORCE=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" = "true" ]; then FORCE="--force"; fi
+          if [ "${{ github.event.schedule }}" = "45 14 * * 4" ]; then FORCE="--force"; fi
+          python -m pipeline.run $FORCE
+
+      - name: Test the web build
+        if: steps.run.outputs.changed == 'true'
+        run: |
+          python -m playwright install --with-deps chromium
+          python -m pytest tests/test_ui.py -q
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.run.outputs.changed == 'true'
+        with:
+          path: site
+
+      # GitHub pauses scheduled workflows in repos with no commits for 60 days.
+      # On the weekly Thursday rebuild, push an empty commit if the repo has gone quiet for 40.
+      - name: Keep the schedule alive
+        if: github.event.schedule == '45 14 * * 4'
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -gt $(( 40 * 86400 )) ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit --allow-empty -m "Keep scheduled grading active"
+            git push
+          fi
+
+  deploy:
+    needs: grade
+    if: needs.grade.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

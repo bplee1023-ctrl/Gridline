@@ -1,0 +1,7 @@
+# Manual position overrides for hybrid players (EDGE/LB, slot CB/S, etc.).
+# Key: gsis_id (find it on the player's page in the app or in players.json).
+# Value: one of QB RB WR TE OT IOL EDGE IDL LB CB S K P
+#
+# Example:
+# "00-0036264": EDGE
+{}

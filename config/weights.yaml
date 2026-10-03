@@ -1,0 +1,62 @@
+# Component prior weights per position (from the design doc).
+# The baseline build fits weights by non-negative ridge regression (shrunk toward these
+# priors) and stores the fitted weights in baseline_stats.json. Set `use_fitted: false`
+# to grade with these priors exactly.
+
+use_fitted: true
+fit:
+  prior_strength: 0.5        # lambda as a multiple of sample size; higher = closer to priors
+  early_weeks: [1, 8]        # components measured over these weeks...
+  later_weeks: [9, 16]       # ...predict value over these weeks
+
+priors:
+  QB:   {passing_value: 0.35, accuracy: 0.15, decisions: 0.15, pocket: 0.15, rushing: 0.15, penalties: 0.05}
+  RB:   {rushing_efficiency: 0.30, contact: 0.15, receiving: 0.20, pass_protection: 0.15, ball_security: 0.10, short_yardage: 0.10}
+  WR:   {receiving_value: 0.35, earning_targets: 0.15, catch_quality: 0.15, after_catch: 0.15, run_blocking: 0.10, ball_security: 0.10}
+  TE:   {receiving_value: 0.25, earning_targets: 0.10, catch_quality: 0.10, after_catch: 0.10, run_blocking: 0.25, pass_protection: 0.10, ball_security: 0.10}
+  OT:   {pass_protection: 0.45, run_blocking: 0.40, penalties: 0.15}
+  IOL:  {pass_protection: 0.45, run_blocking: 0.40, penalties: 0.15}
+  EDGE: {pass_rush: 0.50, run_defense: 0.30, tackling: 0.10, penalties: 0.10}
+  IDL:  {pass_rush: 0.40, run_defense: 0.40, tackling: 0.10, penalties: 0.10}
+  LB:   {run_defense: 0.35, coverage: 0.30, blitzing: 0.15, tackling: 0.10, penalties: 0.10}
+  CB:   {coverage: 0.60, run_support: 0.15, tackling: 0.10, penalties: 0.15}
+  S:    {coverage: 0.45, run_support: 0.25, tackling: 0.15, penalties: 0.15}
+  K:    {field_goals: 0.60, extra_points: 0.10, kickoffs: 0.30}
+  P:    {net_value: 0.60, pinning: 0.20, return_suppression: 0.20}
+  RET:  {return_value: 0.60, explosive: 0.25, ball_security: 0.15}
+
+# Replacement level for Impact: the Nth-best qualified player at the position
+# ("33rd-best starter" for QB, scaled by starting roster slots elsewhere).
+replacement_rank:
+  QB: 33
+  RB: 33
+  WR: 97
+  TE: 33
+  OT: 65
+  IOL: 97
+  EDGE: 65
+  IDL: 65
+  LB: 65
+  CB: 97
+  S: 65
+  K: 33
+  P: 33
+  RET: 33
+
+# Used only when the baseline regression cannot estimate a position's points-per-snap scale.
+impact_scale_fallback: {OT: 0.010, IOL: 0.008, EDGE: 0.012, IDL: 0.010, LB: 0.008, CB: 0.012, S: 0.010}
+
+# Thresholds for an "explosive" return.
+explosive_return_yards: {punt: 20, kick: 40}
+
+# Plays outside this win-probability window are down-weighted (garbage time).
+garbage_time: {wp_low: 0.05, wp_high: 0.95, weight: 0.3}
+
+# Grade calibration targets among qualified players (quantile -> grade).
+calibration:
+  - [0.97, 90]
+  - [0.85, 80]
+  - [0.60, 70]
+  - [0.30, 60]
+
+bootstrap_samples: 500
