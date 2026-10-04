@@ -5,7 +5,7 @@ name: Grade
 
 on:
   schedule:
-    - cron: "30 0,6,12,18 * * *"
+    - cron: "17 0,6,12,18 * * *"
     - cron: "45 14 * * 4"
   workflow_dispatch:
     inputs:
